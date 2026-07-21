@@ -22,7 +22,7 @@ quotes = [
     "I'm going to the gym later, so I deserve a treat!",
 ]
 
-TWEET_TEXT = choice(quotes)
+TWEET_TEXT = f"'{choice(quotes)}' - Liz Lemon. #automated"
 
 
 def post_tweet():
@@ -36,6 +36,13 @@ def post_tweet():
         settings["access_token_secret"],
     )
     api = tweepy.API(auth, wait_on_rate_limit=True)
+    client = tweepy.Client(
+        consumer_key=settings["api_key"],
+        consumer_secret=settings["api_secret"],
+        access_token=settings["access_token"],
+        access_token_secret=settings["access_token_secret"],
+        wait_on_rate_limit=True,
+    )
 
     print("Checking credentials...")
     user = api.verify_credentials()
@@ -44,9 +51,9 @@ def post_tweet():
     print(f"Uploading media from {image_path}...")
     media = api.media_upload(filename=str(image_path))
 
-    print("Posting tweet...")
-    status = api.update_status(status=TWEET_TEXT, media_ids=[media.media_id])
-    print(f"Tweet posted successfully: {status.id}")
+    print("Posting tweet via X API v2...")
+    response = client.create_tweet(text=TWEET_TEXT, media_ids=[media.media_id])
+    print(f"Tweet posted successfully: {response.data['id']}")
 
 
 if __name__ == "__main__":
@@ -57,5 +64,5 @@ if __name__ == "__main__":
         if hasattr(exc, "response") and exc.response is not None:
             print(f"HTTP status: {exc.response.status_code}")
             print(f"Response body: {exc.response.text}")
-        print("This usually means the app is authenticated but X is still rejecting write access. Check the app permissions in the X Developer Portal and regenerate the access token/secret after changing them.")
+        print("This usually means the app is authenticated, but X is rejecting the write request because the app/account has no remaining API credits or does not have a posting tier enabled.")
         raise SystemExit(1)
