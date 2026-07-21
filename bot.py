@@ -27,7 +27,7 @@ TWEET_TEXT = choice(quotes)
 
 def post_tweet():
     settings = get_settings()
-    image_path = Path("lemonitsmonday.png")
+    image_path = Path(__file__).resolve().with_name("lemonitsmonday.png")
 
     auth = tweepy.OAuth1UserHandler(
         settings["api_key"],
@@ -36,11 +36,17 @@ def post_tweet():
         settings["access_token_secret"],
     )
     api = tweepy.API(auth, wait_on_rate_limit=True)
-    api.verify_credentials()
 
+    print("Checking credentials...")
+    user = api.verify_credentials()
+    print(f"Authenticated as @{user.screen_name}")
+
+    print(f"Uploading media from {image_path}...")
     media = api.media_upload(filename=str(image_path))
-    api.update_status(status=TWEET_TEXT, media_ids=[media.media_id])
-    print("Tweet posted successfully")
+
+    print("Posting tweet...")
+    status = api.update_status(status=TWEET_TEXT, media_ids=[media.media_id])
+    print(f"Tweet posted successfully: {status.id}")
 
 
 if __name__ == "__main__":
@@ -48,4 +54,8 @@ if __name__ == "__main__":
         post_tweet()
     except Exception as exc:
         print(f"Error: {exc}")
+        if hasattr(exc, "response") and exc.response is not None:
+            print(f"HTTP status: {exc.response.status_code}")
+            print(f"Response body: {exc.response.text}")
+        print("This usually means the app is authenticated but X is still rejecting write access. Check the app permissions in the X Developer Portal and regenerate the access token/secret after changing them.")
         raise SystemExit(1)
